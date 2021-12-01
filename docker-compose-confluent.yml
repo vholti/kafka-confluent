@@ -1,0 +1,52 @@
+version: "3"
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:5.0.0
+    ports:
+      - "32181:32181"
+    environment:
+      - ZOOKEEPER_CLIENT_PORT=32181
+      - ZOOKEEPER_TICK_TIME=2000
+    volumes:
+      - "/data/docker_shared/pod/kafka_confluent/zookeper/data:/var/lib/zookeper/data"
+      - "/data/docker_shared/pod/kafka_confluent/zookeper/log:/var/lib/zookeper/log"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+
+  kafka-1:
+    image: confluentinc/cp-kafka:5.0.0
+    ports:
+      - "29092:29092"
+    environment:
+      - KAFKA_ZOOKEEPER_CONNECT=localhost:32181
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:29092
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_METRIC_REPORTERS= io.confluent.metrics.reporter.ConfluentMetricsReporter
+      - KAFKA_DELETE_TOPIC_ENABLE= "true"
+      - KAFKA_JMX_PORT= 9999
+      - KAFKA_JMX_HOSTNAME= 'kafka-1'
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR= 1
+      - CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS= kafka-1:29092
+      - CONFLUENT_METRICS_REPORTER_ZOOKEEPER_CONNECT= zookeeper:32181
+      - CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS= 1
+      - CONFLUENT_METRICS_ENABLE= 'true'
+      - CONFLUENT_SUPPORT_CUSTOMER_ID= 'anonymous'      
+    volumes:
+      - "/data/docker_shared/pod/kafka_confluent/kafka/data:/var/lib/kafka/data"
+    depends_on:
+      - zookeeper
+
+  schema_registry:
+    image: confluentinc/cp-schema-registry:5.0.0
+    ports:
+      - "8081:8081"
+    environment:
+      - SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL=zookeper:32181
+      - SCHEMA_REGISTRY_HOST_NAME=schema_registry
+      - SCHEMA_REGISTRY_LISTENERS=http://localhost:8081
+    volumes:
+      - "/data/docker_shared/pod/kafka_confluent/kafka/data:/var/lib/kafka/data"
+    depends_on:
+      - zookeeper  
+      - kafka-1    
